@@ -1,0 +1,8 @@
+sympy
+feynman
+fractions
+itertools
+scipy
+IPython.display
+matplotlib.pyplot
+numpy
