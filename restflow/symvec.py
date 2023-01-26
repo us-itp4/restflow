@@ -1,8 +1,7 @@
 """Implementation of symbolic vectors with sympy."""
 
 import sympy
-from sympy import *
-from symtools import *
+from restflow.symtools import *
 
 dots = {}
 
@@ -115,13 +114,13 @@ def integrate2(expr, k, q, d, n):
     # prepare
     cs = sympy.Symbol('cos_theta')
     dot = dots[frozenset((q.sym,k.sym))]
-    num = sympify(expr[0])
-    denum = sympify(expr[1])
+    num = sympy.sympify(expr[0])
+    denum = sympy.sympify(expr[1])
     expr = num/denum
     expr = expr.subs(dot,q.sym*k.sym*cs) # replace dot product
     expr = sympy.series(expr,q.sym,x0=0,n=n).removeO()    # expand in orders of q
-    expr = cancel(expr)
-    expr = Poly(expr,q.sym).as_expr()
+    expr = sympy.cancel(expr)
+    expr = sympy.Poly(expr,q.sym).as_expr()
 
     # integrate
     return _integrate_theta(expr,cs,d)
@@ -132,8 +131,6 @@ def integrate3(expr, k, q, p, d, n):
     vectors.
     """
     # prepare
-    from IPython.display import display
-    from sympy import Mul
     cs_psi, si_psi = sympy.symbols('cos_psi sin_psi')
     cs, x = sympy.symbols('cos_theta (sin_theta·cos_phi)')
     dot_qk = dots[frozenset((q.sym,k.sym))]
@@ -146,19 +143,19 @@ def integrate3(expr, k, q, p, d, n):
     num, denum = num.subs(dot_qp,q.sym*p.sym*cs_psi), denum.subs(dot_qp,q.sym*p.sym*cs_psi)
     # expand the expression before the angular integration
     # cancel common factors like q**2 before taylor expansion wrt q
-    expr = cancel(num/denum)
-    num = fraction(expr)[0]
-    denum = fraction(expr)[1]
+    expr = sympy.cancel(num/denum)
+    num = sympy.fraction(expr)[0]
+    denum = sympy.fraction(expr)[1]
     
     num = num + O(q.sym**n)+O(p.sym**n)+sum([O(q.sym**i*p.sym**(n-i)) for i in range(0,n)])
-    num=num.removeO()
+    num = num.removeO()
     denum = denum + O(q.sym**n)+O(p.sym**n)+sum([O(q.sym**i*p.sym**(n-i)) for i in range(0,n)])
-    denum=denum.removeO()
+    denum = denum.removeO()
 
     expr = num*Taylor_polynomial_sympy(denum**(-1), [q.sym,p.sym], [0,0], n)
     # expand express discarding higher order terms
-    expr= expand(expr)+O(q.sym**n)+O(p.sym**n)+sum([O(q.sym**i*p.sym**(n-i)) for i in range(0,n)])
-    expr=expr.removeO()
+    expr = sympy.expand(expr)+O(q.sym**n) + O(p.sym**n) + sum([O(q.sym**i*p.sym**(n-i)) for i in range(0,n)])
+    expr = expr.removeO()
     # keep only the cs_psi dependence
     expr = expr.subs(si_psi**2,1-cs_psi**2)
     # integrate
@@ -167,7 +164,7 @@ def integrate3(expr, k, q, p, d, n):
     # treat remaining cos_theta
     expr = _integrate_theta(expr,cs,d)       
     # Factorizes the expression in powers of q and p
-    expr = Poly(expr,q.sym,p.sym).as_expr()
+    expr = sympy.Poly(expr,q.sym,p.sym).as_expr()
     return expr
 
 def integrate_magnitude(expr, k, d, *args):
