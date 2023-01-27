@@ -9,7 +9,7 @@
 
 ## Overview
 
-`restflow` employs sympy to calculate the flow equations for a given dynamical system (equilibrium or non-equilibrium). It automatically solves given feynmann diagrams symbolically and their contributions to the vertex functions. This allows it to overcome tedious calculations with taylor expansions. It applies Wilsonian renormalization group theory for a shell of momenta to obtain continuous flow equations. For more information, the following review summarizes the underlying theory and the notations used [TODO: Inserts manuscript].
+`restflow` employs sympy to calculate the flow equations for a given dynamical system (equilibrium or non-equilibrium). Given the feynman diagrams, it symbolically solves the integrals and extracts their contributions to the vertex functions. This allows it to overcome tedious calculations arising from perturbation theory. It applies Wilsonian renormalization group theory for a shell of momenta to obtain continuous flow equations. For more information, the following review summarizes the underlying theory and the notations used [TODO: Inserts manuscript].
 
 ## System requirements
 
@@ -35,28 +35,15 @@ This package has been tested on the following systems with 3.10.9:
 
 ## Installation
 
-#### From `pip`:
-```bash
-pip install restflow
-```
 
-#### Or directly from the source: clone `RSMI-NE` from GitHub
+#### Directly from the source: clone `restflow` from GitHub
 ```bash
-git clone https://github.tik.uni-stuttgart.de/ac141876/restflow
-cd RSMI-NE
-```
-and install the `restflow` package via `pip` in editable mode
-```bash
-pip install -e .
-```
-or create a virtual environment and install there:
-```bash
-./install.sh
+https://github.tik.uni-stuttgart.de/ac141876/restflow.git
 ```
 
 ## Getting started
 
-The package can be used by importing the `rsmine` module and its submodules:
+The package can be used by importing the `restflow` module and its submodules:
 ```python
 import restflow
 ```
@@ -66,7 +53,8 @@ import restflow
 The important scripts of the package are located in `/restflow`
 
 * `symtools.py`: Extends functions of `sympy` (e.g. Taylor expansions) for multivariate functions.
-* `symvec.py`: Implements symbolically vectors using sympy. It further symbolically calculates the Feynman diagrams
-* `graph.py`: Maps a graphical Feynman diagram into an integral
-* `active_model_bplus.ipynb`: Applies `restflow` for Active Model B+.
-* `floweqt.ipynb`: For given flow equations, it calculates numerically and graphically the system of equations.
+* `symvec.py`: Implements symbolically vectors using sympy. It further symbolically solves the Feynman diagrams
+* `graph.py`: Maps a graphical Feynman diagram into an integral. It has option to extract the graph into a LaTeX file.
+* `integrals.py`: Iterates and solves the `graph.py` for all the possible graphs given a symmetrized Feynman diagram (by permutating the external leg labels). 
+* `neural_networks.ipynb`: Applies `restflow` for a Neural Network Model.
+* `example.ipynb`: Applies `restflow` for 2 simple cases of the KPZ model.
