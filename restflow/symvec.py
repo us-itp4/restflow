@@ -13,6 +13,10 @@ class VectorAdd:
         self.a = a
         self.b = b
 
+    @property
+    def val(self):
+        return self.a.val + self.b.val
+
     def __add__(self, rhs):
         if type(rhs) is Vector or VectorAdd:
             return VectorAdd(self, rhs)
@@ -56,6 +60,10 @@ class Vector:
     def __init__(self, sym, factor=1):
         self.sym = sym
         self.factor = factor
+
+    @property
+    def val(self):
+        return self.factor*self.sym
 
     def __add__(self, rhs):
         if type(rhs) is Vector or type(rhs) is VectorAdd:
