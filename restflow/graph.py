@@ -4,8 +4,13 @@ import feynman
 from restflow import symvec
 
 class Edge:
-  """
-  Directed edge with label. External edges have no end vertex.
+  """Directed edge with label.
+
+  Attributes:
+    start (Vertex): start vertex
+    end (Vertex): end vertex
+    label (Vector or VectorAdd): wave vector to label edge
+    angle (real): orientation hint for edge in units of 2π
   """
   def __init__(self,start=None,end=None,label=None,angle=0.0):
     self.start = start
@@ -13,14 +18,15 @@ class Edge:
     self.label = label
     self.angle = angle
 
-  def render_label(self):
+  def _render_label(self):
     return str(self.label.val)
 
 class Vertex:
-  """
-  A vertex.
-    _in: incoming edges (1 or 2)
-    _out: outgoing edges (0, 2, or 3)
+  """A vertex.
+
+  Attributes:
+    _in (list): incoming edges (1 or 2)
+    _out (list): outgoing edges (0, 2, or 3)
   """
   def __init__(self):
     self._in = []
@@ -39,23 +45,30 @@ class Vertex:
     e = Edge(start=self,angle=angle)
     self._out.append(e)
 
-  def assign_label(self):
+  def _assign_label(self):
+    """
+    Recusively assigns the sum of outgoing wave vectors to the incoming leg.
+    Call for root vertex.
+    """
     sum = None
     for e in self._out:
       if e.label is None:
-        e.end.assign_label()
+        e.end._assign_label()
       if sum is None:
         sum = e.label
       else:
         sum = sum + e.label
     self._in[0].label = sum
 
-  def render(self,diagram,v):
+  def _render(self,diagram,v):
+    """
+    Recursively add vertices to diagram.
+    """
     dx = 0.2
     if self._in[0].start is None:
       v0 = diagram.vertex(v._xy,dxy=(-dx,0))
       l = diagram.line(vstart=v0,vend=v)
-      l.text(self._in[0].render_label(),horizontalalignment='center')
+      l.text(self._in[0]._render_label(),horizontalalignment='center')
     for e in self._out:
       if e.end and e.end.degree == 0: # is correlation
         if hasattr(e.end,'_g'):
@@ -66,14 +79,15 @@ class Vertex:
       else:
         ve = diagram.vertex(v._xy,angle=e.angle,radius=dx)
       l = diagram.line(vstart=v,vend=ve)
-      l.text(e.render_label(),horizontalalignment='center')
+      l.text(e._render_label(),horizontalalignment='center')
       if e.end:
-        e.end.render(diagram,ve)
+        e.end._render(diagram,ve)
 
 class Graph:
-  """
-  Represents a single graph composed of vertices.
-    vertices: list of vertices with the root at position 0
+  """Represents a single graph composed of vertices.
+
+  Attributes:
+    vertices (list): list of vertices with the root at position 0
   """
   def __init__(self,vertices):
     self.vertices = vertices
@@ -81,10 +95,11 @@ class Graph:
     self.root._in.append(Edge(end=self.root)) # add incoming edge
 
   def label_edges(self,k,p):
-    """
-    Label all edges with the corresponding wave vector.
-      k: integration variable
-      p: list of n outgoing
+    """Label all edges with the corresponding wave vector.
+
+    Arguments:
+      k (Vector): integration variable
+      p (list): list of n outgoing wave vectors (Vector)
     """
     # label external legs
     for v in self.vertices:
@@ -96,7 +111,7 @@ class Graph:
           if e.end == None: # is leaf
             e.label = p.pop(0)
     # now label all internal edges obeying "momentum conservation"
-    self.root.assign_label()
+    self.root._assign_label()
 
   def freq_integral(self,f,D,k):
     '''
@@ -187,7 +202,7 @@ class Graph:
     input graph of the user is the desired one (cross-check)
     '''
     diagram = feynman.Diagram()
-    self.root.render(diagram,diagram.vertex(xy=(.25,.5)))
+    self.root._render(diagram,diagram.vertex(xy=(.25,.5)))
     diagram.plot()
     plt.show()
 
