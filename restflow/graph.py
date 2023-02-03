@@ -92,9 +92,11 @@ class Graph:
   """Represents a single graph composed of vertices.
 
   Attributes:
+    k (Vector): internal wave vector
     vertices (list): list of vertices with the root at position 0
   """
   def __init__(self,vertices):
+    self.k = None
     self.vertices = vertices
     self.root = vertices[0]
     self.root._in.append(Edge(end=self.root)) # add incoming edge
@@ -103,9 +105,10 @@ class Graph:
     """Label all edges with the corresponding wave vector.
 
     Arguments:
-      k (Vector): integration variable
+      k (Vector): internal wave vector
       p (list): list of n outgoing wave vectors (Vector)
     """
+    self.k = k
     # label external legs
     for v in self.vertices:
       if v.degree == 0:     # is correlation function
@@ -118,52 +121,52 @@ class Graph:
     # now label all internal edges obeying "momentum conservation"
     self.root._assign_label()
 
-  def freq_integral(self,f,D,k):
-    """Calculates the frequency integral of the wavector.
+  def _calculate_freq_integral(self,k,f):
+    """Determines the result of the frequency integration.
+
     Arguments:
-      ...
+      k (Vector): internal wave vector
+      f (func): propagator function
+
     Returns:
-      The resulted integral
+      tuple: (nominator,denominator)
     """
-    propagators, majority, minority=[], [], []
-    for item in self.vertices:
-      # makes list of intermediate propagators (not external momenta)
-      if len(item._in)==1 and item._in[0].end!=None and item._in[0].start!=None:
-        propagators.append(item._in[0].label)
-    prod_k_prop = [item*k for item in propagators]
+    k_edge, majority, minority = [], [], []
+    for v in self.vertices:
+      # makes list of intermediate edge wave vectors excluding external legs
+      if v.degree > 0 and v._in[0].end != None and v._in[0].start != None:
+        k_edge.append(v._in[0].label)
+    k2_edge = [_k*k for _k in k_edge]
     # extract the sign of the k wavector
     _ksep = sympy.symbols('k')
-    signs = [item.coeff(_ksep**2) for item in prod_k_prop]
+    signs = [item.coeff(_ksep**2) for item in k2_edge]
     majority = [i for i, x in enumerate(signs) if x==max(set(signs), key = signs.count)]
     minority = [i for i, x in enumerate(signs) if x==min(set(signs), key = signs.count)]
-    majority.extend([0,0,0,0]), minority.extend([0,0,0,0]), propagators.extend([0,0,0,0])
+    majority.extend([0,0,0,0]), minority.extend([0,0,0,0]), k_edge.extend([0,0,0,0]) # pad lists with zeros
 
-    #dictionary where key is pair (number of propagators, sum of signs) 
-    # e.g. (2,0) = Qpm, (3,1) = Qppm
-    S0 = (D,f(k))
-    Qpm = ((2*f(k)+f(propagators[0])+f(propagators[1])),(f(propagators[0])+f(propagators[1])))
-    Qppm = ((2*f(k)*(f(k)+f(propagators[majority[0]])+f(propagators[majority[1]])+f(propagators[minority[0]]))+f(propagators[minority[0]])**2+f(propagators[majority[0]])*f(propagators[majority[1]])+f(propagators[majority[0]])*f(propagators[minority[0]])+f(propagators[majority[1]])*f(propagators[minority[0]])),((f(propagators[majority[0]])+f(propagators[minority[0]]))*(f(propagators[majority[1]])+f(propagators[minority[0]]))))
-    
-    # extracting the alpha exponent of our model
-    alpha = 2 if f(k).has(k**4) else 0
+    # Q-function tuples of (nominator,denominator)
+    Qpm = (
+      2*f(k)+f(k_edge[0])+f(k_edge[1]),
+      f(k_edge[0])+f(k_edge[1])
+    )
+    Qppm = (
+      2*f(k)*(f(k)+f(k_edge[majority[0]])+f(k_edge[majority[1]])+f(k_edge[minority[0]]))+f(k_edge[minority[0]])**2+f(k_edge[majority[0]])*f(k_edge[majority[1]])+f(k_edge[majority[0]])*f(k_edge[minority[0]])+f(k_edge[majority[1]])*f(k_edge[minority[0]]),
+      (f(k_edge[majority[0]])+f(k_edge[minority[0]]))*(f(k_edge[majority[1]])+f(k_edge[minority[0]]))
+    )
+
+    # dictionary of (nominator,denominator) where key is the pair (number of
+    # propagators, sum of signs) e.g. (2,0) = Qpm, (3,1) = Qppm
     dict_freq = {
-    (0,0): (S0[0]*k**alpha, S0[1]), 
-    # (1,1): S0*k**alpha*(propagators[0])**2/(f(propagators[0])+f(k)), 
-    (1,1): (S0[0]*k**alpha,S0[1]*((f(propagators[0])+f(k)))), 
-    # (2,2): S0*k**alpha*(propagators[0])**2*(propagators[1])**2/((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))),
-    (2,2): (S0[0]*k**alpha,S0[1]*((f(k)+f(propagators[0]))*(f(k)+f(propagators[1])))),
-    # (2,0): S0*k**alpha*(propagators[0])**2*(propagators[1])**2/((f(k)+f(propagators[0]))*(f(k)+f(propagators[1])))
-    # *(2*f(k)+f(propagators[0])+f(propagators[1]))/(f(propagators[0])+f(propagators[1])), 
-    (2,0): (S0[0]*k**alpha*Qpm[0],S0[1]*((f(k)+f(propagators[0]))*(f(k)+f(propagators[1])))*Qpm[1]), 
-    # (3,3): S0*k**alpha*(propagators[0])**2*(propagators[1])**2*(propagators[2])**2/((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))*(f(k)+f(propagators[2]))), 
-    (3,3): (S0[0]*k**alpha,S0[1]*((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))*(f(k)+f(propagators[2])))), 
-    # (3,1): S0*k**alpha*(propagators[0])**2*(propagators[1])**2*(propagators[2])**2/((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))*(f(k)+f(propagators[2])))
-    # *(2*f(k)*(f(k)+f(propagators[majority[0]])+f(propagators[majority[1]])+f(propagators[minority[0]]))+f(propagators[minority[0]])**2+f(propagators[majority[0]])*f(propagators[majority[1]])+f(propagators[majority[0]])*f(propagators[minority[0]])+f(propagators[majority[1]])*f(propagators[minority[0]]))/((f(propagators[majority[0]])+f(propagators[minority[0]]))*(f(propagators[majority[1]])+f(propagators[minority[0]])))
-    (3,1): (S0[0]*k**alpha*Qppm[0],S0[1]*((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))*(f(k)+f(propagators[2])))*Qppm[1])
-         }
-    return dict_freq[(int(len(signs)),int(abs(sum(signs))))]
- 
-  def multiplicity(self):
+      (0,0): (1,1), 
+      (1,1): (1,f(k_edge[0])+f(k)),
+      (2,2): (1,(f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))),
+      (2,0): (Qpm[0],(f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))*Qpm[1]),
+      (3,3): (1,(f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))*(f(k)+f(k_edge[2]))), 
+      (3,1): (Qppm[0],((f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))*(f(k)+f(k_edge[2])))*Qppm[1])
+    }
+    return dict_freq[(len(signs),int(abs(sum(signs))))]
+
+  def _calculate_multiplicity(self):
     '''
     Calculates the multiplicity of the symmetrized graph using the formula: N_perm = E!/(B!*W!*(E-B-W)!) where E, B, W are the number of empty, black and white dots for each vertex
     Output: an integer number
@@ -186,38 +189,48 @@ class Graph:
       symmetry*=math.factorial(len(item._out))/(math.factorial(num_E)*math.factorial(num_B)*math.factorial(num_C))
     return int(symmetry)
 
-  def integral(self, f, D, k, v2, v3, *args):
-    '''
-    Expresses the graph into integral form including its multiplicity.
-    Input: Graph (with vertices labelled)
-    Output: Integral (sympy expression)
-    '''
-    I = list(self.freq_integral(f, D, k))
+  def convert(self,model):
+    """Converts the graph into a symbolic expression.
+
+    This methods produces a symbolic representation of the graph, which
+    needs to be labeled. It requires a model definition and calculates
+    nominator and denominator separately.
+
+    Arguments:
+      model: object holding the model definition
+
+    Returns:
+      tuple: (nominator,denominator)
+    """
+    nom,den = self._calculate_freq_integral(self.k,model.f)
     for v in self.vertices:
       if v.degree == 2:
-        I[0] *= v2(v._out[0].label,v._out[1].label,v._in[0].label)[0]
-        I[1] *= v2(v._out[0].label,v._out[1].label,v._in[0].label)[1]
+        v2_nom,v2_den = model.v2(v._out[0].label,v._out[1].label,v._in[0].label)
+        nom *= v2_nom
+        den *= v2_den
       elif v.degree == 3:
-        I[0] *= v3(v._out[0].label,v._out[1].label,v._out[2].label, v._in[0].label)[0]
-        I[1] *= v3(v._out[0].label,v._out[1].label,v._out[2].label, v._in[0].label)[1]
-    I[0] *= self.multiplicity()
-    return tuple(I)
+        v3_nom,v3_den = model.v3(v._out[0].label,v._out[1].label,v._out[2].label,v._in[0].label)
+        nom *= v3_nom
+        den *= v3_den
+    nom *= self._calculate_multiplicity()*model.D*self.k**model.alpha
+    den *= model.f(self.k)
+    return (nom,den)
 
   def plot_graph(self):
-    '''
-    Plots the graph using the feynman package. It is used to verify that the
-    input graph of the user is the desired one (cross-check)
-    '''
+    """Plots the graph using the feynman package.
+
+    It can be used to verify that the input graph of the user is the desired
+    one.
+    """
     diagram = feynman.Diagram()
     self.root._render(diagram,diagram.vertex(xy=(.25,.5)))
     diagram.plot()
     plt.show()
 
-  def latex_graph(self,name):
+  def export_latex_graph(self,filename):
+    '''Transforms the graph into a TeX file.
     '''
-    Transforms the graph into a TeX file.
-    '''
-    with open('%s.tex' %name, 'w') as file:
+    with open(f'{filename}.tex','w') as file:
       file.write(r'\documentclass[11pt,a4paper,border={1pt 1pt 16pt 1pt},varwidth]{standalone}' '\n' r'\usepackage[top=15mm,bottom=12mm,left=30mm,right=30mm,head=12mm,includeheadfoot]{geometry}' '\n' r'\usepackage{graphicx,color,soul}' '\n' r'\usepackage[compat=1.1.0]{tikz-feynman}' '\n' r'\usepackage{XCharter}' '\n' r'\begin{document}' '\n' r'\thispagestyle{empty}' '\n' r'\begin{figure*}[t]' '\n \t' r'\hspace{-0.4cm}\feynmandiagram [small,horizontal=root to v0] {' '\n')
       num_leaf=0     
       file.write('\t \t root -- [fermion] v0, \n') 
