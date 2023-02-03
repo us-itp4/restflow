@@ -87,7 +87,7 @@ class Vertex:
       l = diagram.line(vstart=v,vend=ve)
       l.text(e._render_label(),horizontalalignment='center')
       if e.end:
-        e.end.render(diagram,ve)
+        e.end._render(diagram,ve)
 
 class Graph:
   """Represents a single graph composed of vertices.
@@ -137,7 +137,7 @@ class Graph:
     # extract the sign of the k wavector
     # signs=[sympy.Poly(item,k.sym).coeffs()[0] for item in prod_k_prop]
     _ksep = sympy.symbols('k')
-    signs = [item.vertices(_ksep**2) for item in prod_k_prop]
+    signs = [item.coeff(_ksep**2) for item in prod_k_prop]
     majority = [i for i, x in enumerate(signs) if x==max(set(signs), key = signs.count)]
     minority = [i for i, x in enumerate(signs) if x==min(set(signs), key = signs.count)]
     majority.extend([0,0,0,0]), minority.extend([0,0,0,0]), propagators.extend([0,0,0,0])
