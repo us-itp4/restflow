@@ -3,7 +3,15 @@
 import sympy
 from restflow.symtools import *
 
-dots = {}
+class Context:
+    def __init__(self):
+        self.dots = {}
+
+    def add_dot(self, s1, s2, s_dot):
+        self.dots[frozenset((s1,s2))] = s_dot
+
+    def vector(self,sym):
+        return Vector(self,sym)
 
 class VectorAdd:
     """
@@ -55,9 +63,10 @@ class Vector:
     """
     Class to represent a symbolic vector. Product will return the scalar
     product as symbol. For two vectors x and y also needs symbol in
-    dictionary dots to represent dot product.
+    context to represent dot product.
     """
-    def __init__(self, sym, factor=1):
+    def __init__(self, ctx, sym, factor=1):
+        self.ctx = ctx
         self.sym = sym
         self.factor = factor
 
@@ -79,21 +88,22 @@ class Vector:
 
     def __mul__(self, rhs):
         if type(rhs) is Vector:
+            assert(self.ctx == rhs.ctx)
             if self.sym == rhs.sym:
                 return self.factor*self.sym * rhs.factor*rhs.sym
             else:
                 key = frozenset((self.sym,rhs.sym))
-                return self.factor*rhs.factor * dots[key]
+                return self.factor*rhs.factor * self.ctx.dots[key]
         elif type(rhs) is VectorAdd:
             return rhs.a*self + rhs.b*self
         else:
-            return Vector(self.sym, rhs*self.factor)
+            return Vector(self.ctx, self.sym, rhs*self.factor)
 
     def __rmul__(self, lhs):
-        return Vector(self.sym, lhs*self.factor)
+        return Vector(self.ctx, self.sym, lhs*self.factor)
 
     def __neg__(self):
-        return Vector(self.sym, -1*self.factor)
+        return Vector(self.ctx, self.sym, -1*self.factor)
 
     def __pow__(self, p):
         if p == 2:
