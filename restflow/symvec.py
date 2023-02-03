@@ -151,9 +151,8 @@ def integrate3(expr, k, q, p, d, n):
     num, denum = num.subs(dot_qp,q.sym*p.sym*cs_psi), denum.subs(dot_qp,q.sym*p.sym*cs_psi)
     # expand the expression before the angular integration
     # cancel common factors like q**2 before taylor expansion wrt q
-    expr = sympy.cancel(num/denum)
-    num = sympy.fraction(expr)[0]
-    denum = sympy.fraction(expr)[1]
+    num = sympy.expand(num)
+    denum = sympy.expand(denum)
     
     num = num + O(q.sym**n)+O(p.sym**n)+sum([O(q.sym**i*p.sym**(n-i)) for i in range(0,n)])
     num = num.removeO()
