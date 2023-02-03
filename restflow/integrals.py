@@ -2,7 +2,7 @@ import sympy
 from restflow import graph
 from restflow import symvec
 
-def symmetrize(v, in_legs, out_legs, f, D, k, alpha, a, v2, v3,*args):
+def symmetrize(v, in_legs, out_legs, f, D, k, v2, v3,*args):
   '''
   Calculates graphs by permutating labels of external legs
   Output: Array with the integrals with calculated frequency integrals.
@@ -16,8 +16,8 @@ def symmetrize(v, in_legs, out_legs, f, D, k, alpha, a, v2, v3,*args):
   for i in range(len(perm)):
     perm[i] = list(perm[i])
     g = graph.Graph(v_array[i])
-    g.label_edges(in_legs,perm[i],k)
-    I_array.append((g.integral(f, D, k, alpha, a, v2, v3)[0], g.integral(f, D, k, alpha, a, v2, v3)[1]*int(len(perm))))
+    g.label_edges(k,perm[i])
+    I_array.append((g.integral(f, D, k, v2, v3)[0], g.integral(f, D, k, v2, v3)[1]*int(len(perm))))
   return I_array
 
 def solve(I_array, k, legs_label, d, n):

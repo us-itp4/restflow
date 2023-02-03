@@ -30,13 +30,13 @@ class Vertex:
   def degree(self):
     return len(self._out)
 
-  def link_vertex(self,v):
-    e = Edge(start=self,end=v)
+  def link_vertex(self,v,angle):
+    e = Edge(start=self,end=v,angle=angle)
     self._out.append(e)
     v._in.append(e)
 
-  def add_outgoing(self):
-    e = Edge(start=self)
+  def add_outgoing(self,angle):
+    e = Edge(start=self,angle=angle)
     self._out.append(e)
 
   def assign_label(self):
@@ -98,7 +98,7 @@ class Graph:
     # now label all internal edges obeying "momentum conservation"
     self.root.assign_label()
 
-  def freq_integral(self,f,D,k,alpha,a):
+  def freq_integral(self,f,D,k):
     '''
     Calculates the frequency integral of the wavector.
     Output: The resulted integral
@@ -110,33 +110,34 @@ class Graph:
         propagators.append(item._in[0].label)
     prod_k_prop = [item*k for item in propagators]
     # extract the sign of the k wavector
-    # signs=[sympy.Poly(item,k.sym).coeffs()[0] for item in prod_k_prop]
     _ksep = sympy.symbols('k')
-    signs = [item.vertices(_ksep**2) for item in prod_k_prop]
+    signs = [item.coeff(_ksep**2) for item in prod_k_prop]
     majority = [i for i, x in enumerate(signs) if x==max(set(signs), key = signs.count)]
     minority = [i for i, x in enumerate(signs) if x==min(set(signs), key = signs.count)]
     majority.extend([0,0,0,0]), minority.extend([0,0,0,0]), propagators.extend([0,0,0,0])
-    # extracting the alpha exponent of our model
 
     #dictionary where key is pair (number of propagators, sum of signs) 
     # e.g. (2,0) = Qpm, (3,1) = Qppm
-    S0 = (D,f(k, alpha, a))
-    Qpm = ((2*f(k, alpha, a)+f(propagators[0], alpha, a)+f(propagators[1], alpha, a)),(f(propagators[0], alpha, a)+f(propagators[1], alpha, a)))
-    Qppm = ((2*f(k, alpha, a)*(f(k, alpha, a)+f(propagators[majority[0]], alpha, a)+f(propagators[majority[1]], alpha, a)+f(propagators[minority[0]], alpha, a))+f(propagators[minority[0]], alpha, a)**2+f(propagators[majority[0]], alpha, a)*f(propagators[majority[1]], alpha, a)+f(propagators[majority[0]], alpha, a)*f(propagators[minority[0]], alpha, a)+f(propagators[majority[1]], alpha, a)*f(propagators[minority[0]], alpha, a)),((f(propagators[majority[0]], alpha, a)+f(propagators[minority[0]], alpha, a))*(f(propagators[majority[1]], alpha, a)+f(propagators[minority[0]], alpha, a))))
+    S0 = (D,f(k))
+    Qpm = ((2*f(k)+f(propagators[0])+f(propagators[1])),(f(propagators[0])+f(propagators[1])))
+    Qppm = ((2*f(k)*(f(k)+f(propagators[majority[0]])+f(propagators[majority[1]])+f(propagators[minority[0]]))+f(propagators[minority[0]])**2+f(propagators[majority[0]])*f(propagators[majority[1]])+f(propagators[majority[0]])*f(propagators[minority[0]])+f(propagators[majority[1]])*f(propagators[minority[0]])),((f(propagators[majority[0]])+f(propagators[minority[0]]))*(f(propagators[majority[1]])+f(propagators[minority[0]]))))
+    
+    # extracting the alpha exponent of our model
+    alpha = 2 if f(k).has(k**4) else 0
     dict_freq = {
-    (0,0): S0, 
-    # (1,1): S0*k**alpha*(propagators[0])**2/(f(propagators[0], alpha, a)+f(k, alpha, a)), 
-    (1,1): (S0[0]*k**alpha,S0[1]*((f(propagators[0], alpha, a)+f(k, alpha, a)))), 
-    # (2,2): S0*k**alpha*(propagators[0])**2*(propagators[1])**2/((f(k, alpha, a)+f(propagators[0], alpha, a))*(f(k, alpha, a)+f(propagators[1], alpha, a))),
-    (2,2): (S0[0]*k**alpha,S0[1]*((f(k, alpha, a)+f(propagators[0], alpha, a))*(f(k, alpha, a)+f(propagators[1], alpha, a)))),
-    # (2,0): S0*k**alpha*(propagators[0])**2*(propagators[1])**2/((f(k, alpha, a)+f(propagators[0], alpha, a))*(f(k, alpha, a)+f(propagators[1], alpha, a)))
-    # *(2*f(k, alpha, a)+f(propagators[0], alpha, a)+f(propagators[1], alpha, a))/(f(propagators[0], alpha, a)+f(propagators[1], alpha, a)), 
-    (2,0): (S0[0]*k**alpha*Qpm[0],S0[1]*((f(k, alpha, a)+f(propagators[0], alpha, a))*(f(k, alpha, a)+f(propagators[1], alpha, a)))*Qpm[1]), 
-    # (3,3): S0*k**alpha*(propagators[0])**2*(propagators[1])**2*(propagators[2])**2/((f(k, alpha, a)+f(propagators[0]))*(f(k, alpha, a)+f(propagators[1], alpha, a))*(f(k, alpha, a)+f(propagators[2], alpha, a))), 
-    (3,3): (S0[0]*k**alpha,S0[1]*((f(k, alpha, a)+f(propagators[0], alpha, a))*(f(k, alpha, a)+f(propagators[1], alpha, a))*(f(k, alpha, a)+f(propagators[2], alpha, a)))), 
-    # (3,1): S0*k**alpha*(propagators[0])**2*(propagators[1])**2*(propagators[2])**2/((f(k, alpha, a)+f(propagators[0], alpha, a))*(f(k, alpha, a)+f(propagators[1], alpha, a))*(f(k, alpha, a)+f(propagators[2], alpha, a)))
-    # *(2*f(k, alpha, a)*(f(k, alpha, a)+f(propagators[majority[0]], alpha, a)+f(propagators[majority[1]], alpha, a)+f(propagators[minority[0]], alpha, a))+f(propagators[minority[0]], alpha, a)**2+f(propagators[majority[0]], alpha, a)*f(propagators[majority[1]], alpha, a)+f(propagators[majority[0]], alpha, a)*f(propagators[minority[0]], alpha, a)+f(propagators[majority[1]], alpha, a)*f(propagators[minority[0]], alpha, a))/((f(propagators[majority[0]], alpha, a)+f(propagators[minority[0]], alpha, a))*(f(propagators[majority[1]], alpha, a)+f(propagators[minority[0]], alpha, a)))
-    (3,1): (S0[0]*k**alpha*Qppm[0],S0[1]*((f(k, alpha, a)+f(propagators[0], alpha, a))*(f(k, alpha, a)+f(propagators[1], alpha, a))*(f(k, alpha, a)+f(propagators[2], alpha, a)))*Qppm[1])
+    (0,0): (S0[0]*k**alpha, S0[1]), 
+    # (1,1): S0*k**alpha*(propagators[0])**2/(f(propagators[0])+f(k)), 
+    (1,1): (S0[0]*k**alpha,S0[1]*((f(propagators[0])+f(k)))), 
+    # (2,2): S0*k**alpha*(propagators[0])**2*(propagators[1])**2/((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))),
+    (2,2): (S0[0]*k**alpha,S0[1]*((f(k)+f(propagators[0]))*(f(k)+f(propagators[1])))),
+    # (2,0): S0*k**alpha*(propagators[0])**2*(propagators[1])**2/((f(k)+f(propagators[0]))*(f(k)+f(propagators[1])))
+    # *(2*f(k)+f(propagators[0])+f(propagators[1]))/(f(propagators[0])+f(propagators[1])), 
+    (2,0): (S0[0]*k**alpha*Qpm[0],S0[1]*((f(k)+f(propagators[0]))*(f(k)+f(propagators[1])))*Qpm[1]), 
+    # (3,3): S0*k**alpha*(propagators[0])**2*(propagators[1])**2*(propagators[2])**2/((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))*(f(k)+f(propagators[2]))), 
+    (3,3): (S0[0]*k**alpha,S0[1]*((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))*(f(k)+f(propagators[2])))), 
+    # (3,1): S0*k**alpha*(propagators[0])**2*(propagators[1])**2*(propagators[2])**2/((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))*(f(k)+f(propagators[2])))
+    # *(2*f(k)*(f(k)+f(propagators[majority[0]])+f(propagators[majority[1]])+f(propagators[minority[0]]))+f(propagators[minority[0]])**2+f(propagators[majority[0]])*f(propagators[majority[1]])+f(propagators[majority[0]])*f(propagators[minority[0]])+f(propagators[majority[1]])*f(propagators[minority[0]]))/((f(propagators[majority[0]])+f(propagators[minority[0]]))*(f(propagators[majority[1]])+f(propagators[minority[0]])))
+    (3,1): (S0[0]*k**alpha*Qppm[0],S0[1]*((f(k)+f(propagators[0]))*(f(k)+f(propagators[1]))*(f(k)+f(propagators[2])))*Qppm[1])
          }
     return dict_freq[(int(len(signs)),int(abs(sum(signs))))]
  
@@ -163,13 +164,13 @@ class Graph:
       symmetry*=math.factorial(len(item._out))/(math.factorial(num_E)*math.factorial(num_B)*math.factorial(num_C))
     return int(symmetry)
 
-  def integral(self, f, D, k, alpha, a, v2, v3, *args):
+  def integral(self, f, D, k, v2, v3, *args):
     '''
     Expresses the graph into integral form including its multiplicity.
     Input: Graph (with vertices labelled)
     Output: Integral (sympy expression)
     '''
-    I = list(self.freq_integral(f, D, k, alpha, a))
+    I = list(self.freq_integral(f, D, k))
     for v in self.vertices:
       if v.degree == 2:
         I[0] *= v2(v._out[0].label,v._out[1].label,v._in[0].label)[0]
