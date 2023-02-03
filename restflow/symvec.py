@@ -123,7 +123,7 @@ def _integrate_theta(expr, cs, d):
     expr = expr.subs(cs,0)
     return expr
 
-def integrate2(expr, k, q, d, n):
+def integrate2(expr, k, q, ctx, d, n):
     """
     Perform symbolic angular integration of k with fixed q. Expands up to
     order n of external wave vector q. Only treats scalar products up to
@@ -131,6 +131,7 @@ def integrate2(expr, k, q, d, n):
     """
     # prepare
     cs = sympy.Symbol('cos_theta')
+    dots = ctx.dots
     dot = dots[frozenset((q.sym,k.sym))]
     num = sympy.sympify(expr[0])
     denum = sympy.sympify(expr[1])
@@ -143,7 +144,7 @@ def integrate2(expr, k, q, d, n):
     # integrate
     return _integrate_theta(expr,cs,d)
 
-def integrate3(expr, k, q, p, d, n):
+def integrate3(expr, k, q, p, ctx, d, n):
     """
     Perform symbolic angular integration of k with two external wave
     vectors.
@@ -151,6 +152,7 @@ def integrate3(expr, k, q, p, d, n):
     # prepare
     cs_psi, si_psi = sympy.symbols('cos_psi sin_psi')
     cs, x = sympy.symbols('cos_theta (sin_theta·cos_phi)')
+    dots = ctx.dots
     dot_qk = dots[frozenset((q.sym,k.sym))]
     dot_pk = dots[frozenset((p.sym,k.sym))]
     dot_qp = dots[frozenset((q.sym,p.sym))]
