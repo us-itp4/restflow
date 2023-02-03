@@ -37,6 +37,11 @@ class Vertex:
     return len(self._out)
 
   def link_vertex(self,v,angle):
+    """Link this vertex to another vertex.
+    Arguments:
+      v (Vertex): target vertex
+      angle (real): orientation hint for edge in units of 2π
+    """
     e = Edge(start=self,end=v,angle=angle)
     self._out.append(e)
     v._in.append(e)
@@ -114,10 +119,12 @@ class Graph:
     self.root._assign_label()
 
   def freq_integral(self,f,D,k):
-    '''
-    Calculates the frequency integral of the wavector.
-    Output: The resulted integral
-    '''
+    """Calculates the frequency integral of the wavector.
+    Arguments:
+      ...
+    Returns:
+      The resulted integral
+    """
     propagators, majority, minority=[], [], []
     for item in self.vertices:
       # makes list of intermediate propagators (not external momenta)
