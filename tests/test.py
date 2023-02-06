@@ -42,7 +42,7 @@ class AMBp:
         self.c1, self.c2, self.c3, self.u, self.D, self.kappa = sympy.symbols('c1 c2 c3 u D kappa')
 
     def f(self,k):
-        return (self.kappa*k**2)
+        return (self.kappa*k**self.alpha)
 
     def v2(self,k1,k2,q):
         expr = (self.c1*q**2+2*self.c2*k1*k2-self.c3*(k2**2*q*k1+k1**2*q*k2)/(q**2))*1/2
