@@ -1,13 +1,10 @@
 """Implementation of symbolic vectors with sympy."""
 
-import sympy
-from restflow.symtools import *
-
 class Context:
     def __init__(self):
         self.dots = {}
 
-    def add_dot(self, s1, s2, s_dot):
+    def add_dot_product(self, s1, s2, s_dot):
         self.dots[frozenset((s1,s2))] = s_dot
 
     def vector(self,sym):
@@ -114,99 +111,3 @@ class Vector:
             return 1
         else:
             raise ValueError
-
-def _integrate_theta(expr, cs, d):
-    # replace powers of cos by integral
-    expr = expr.subs(cs**4,3/(d*(d+2)))
-    expr = expr.subs(cs**3,0)
-    expr = expr.subs(cs**2,1/d)
-    expr = expr.subs(cs,0)
-    return expr
-
-def integrate2(expr, k, q, ctx, d, n):
-    """
-    Perform symbolic angular integration of k with fixed q. Expands up to
-    order n of external wave vector q. Only treats scalar products up to
-    power of 4.
-    """
-    # prepare
-    cs = sympy.Symbol('cos_theta')
-    dots = ctx.dots
-    dot = dots[frozenset((q.sym,k.sym))]
-    num = sympy.sympify(expr[0])
-    denum = sympy.sympify(expr[1])
-    expr = num/denum
-    expr = expr.subs(dot,q.sym*k.sym*cs) # replace dot product
-    expr = sympy.series(expr,q.sym,x0=0,n=n).removeO()    # expand in orders of q
-    expr = sympy.cancel(expr)
-    expr = sympy.Poly(expr,q.sym).as_expr()
-
-    # integrate
-    return _integrate_theta(expr,cs,d)
-
-def integrate3(expr, k, q, p, ctx, d, n):
-    """
-    Perform symbolic angular integration of k with two external wave
-    vectors.
-    """
-    # prepare
-    cs_psi, si_psi = sympy.symbols('cos_psi sin_psi')
-    cs, x = sympy.symbols('cos_theta (sin_theta·cos_phi)')
-    dots = ctx.dots
-    dot_qk = dots[frozenset((q.sym,k.sym))]
-    dot_pk = dots[frozenset((p.sym,k.sym))]
-    dot_qp = dots[frozenset((q.sym,p.sym))]
-    num = expr[0]
-    denum = expr[1]
-    num, denum = num.subs(dot_qk,q.sym*k.sym*cs), denum.subs(dot_qk,q.sym*k.sym*cs)
-    num, denum = num.subs(dot_pk,p.sym*k.sym*(cs_psi*cs+si_psi*x)), denum.subs(dot_pk,p.sym*k.sym*(cs_psi*cs+si_psi*x))
-    num, denum = num.subs(dot_qp,q.sym*p.sym*cs_psi), denum.subs(dot_qp,q.sym*p.sym*cs_psi)
-    # expand the expression before the angular integration
-    # cancel common factors like q**2 before taylor expansion wrt q
-    num = sympy.expand(num)
-    denum = sympy.expand(denum)
-    
-    num = num + O(q.sym**n)+O(p.sym**n)+sum([O(q.sym**i*p.sym**(n-i)) for i in range(0,n)])
-    num = num.removeO()
-    denum = denum + O(q.sym**n)+O(p.sym**n)+sum([O(q.sym**i*p.sym**(n-i)) for i in range(0,n)])
-    denum = denum.removeO()
-
-    expr = num*Taylor_polynomial_sympy(denum**(-1), [q.sym,p.sym], [0,0], n)
-    # expand express discarding higher order terms
-    expr = sympy.expand(expr)+O(q.sym**n) + O(p.sym**n) + sum([O(q.sym**i*p.sym**(n-i)) for i in range(0,n)])
-    expr = expr.removeO()
-    # keep only the cs_psi dependence
-    expr = expr.subs(si_psi**2,1-cs_psi**2)
-    # integrate
-    expr = expr.subs(x**2,1/d)
-    expr = expr.subs(x,0)
-    # treat remaining cos_theta
-    expr = _integrate_theta(expr,cs,d)       
-    # Factorizes the expression in powers of q and p
-    expr = sympy.Poly(expr,q.sym,p.sym).as_expr()
-    return expr
-
-def integrate_magnitude(expr, k, d, *args):
-    '''
-    Calculates the magnitude wavevector integral and multiplies by the surface area of hypersphere S_d (from angular integral)
-    '''
-    K_d, Lambda, delta_l = sympy.symbols('K_d, Lambda, δl')
-    expr = expr.subs(k.sym, Lambda)*Lambda**d*delta_l*K_d
-    return simplify(expr)
-
-def func_coef(polynomial, q, p):
-    """
-    Returns a dictionary of the monomials of the integrals
-    """    
-    # Prepare
-    cs_psi = sympy.symbols('cos_psi')
-    polynomial=Poly(polynomial,(q.sym,p.sym,cs_psi)).as_expr()
-    variables=[q.sym,p.sym,cs_psi]
-    var_temp=[]
-    # Following for loop removes the dependency of the polynomial on q,p or cosψ  if these monomials do not exist e.g. q^2+q has no p monomial
-    for var in variables:
-        if var not in polynomial.free_symbols:
-            var_temp.append(var)
-    variables=[element for element in variables if element not in var_temp]
-    coeffs=all_coeffs(polynomial,variables)
-    return coeffs

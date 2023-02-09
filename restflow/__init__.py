@@ -1,2 +1,2 @@
 from restflow.graph import *
-import restflow.integrals
+from restflow.symbolic import integrate
