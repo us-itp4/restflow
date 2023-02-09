@@ -1,7 +1,9 @@
+import math 
+import itertools
 import sympy
 import matplotlib.pyplot as plt
 import feynman
-from restflow import symvec
+from restflow import symbolic
 
 class Edge:
   """Directed edge with label.
@@ -38,6 +40,7 @@ class Vertex:
 
   def link_vertex(self,v,angle):
     """Link this vertex to another vertex.
+
     Arguments:
       v (Vertex): target vertex
       angle (real): orientation hint for edge in units of 2π
@@ -104,11 +107,14 @@ class Graph:
   def label_edges(self,k,p):
     """Label all edges with the corresponding wave vector.
 
+    Requires a single-loop graph with a single correlation function.
+
     Arguments:
       k (Vector): internal wave vector
       p (list): list of n outgoing wave vectors (Vector)
     """
     self.k = k
+    p = p.copy()
     # label external legs
     for v in self.vertices:
       if v.degree == 0:     # is correlation function
@@ -129,7 +135,7 @@ class Graph:
       f (func): propagator function
 
     Returns:
-      tuple: (nominator,denominator)
+      tuple: (numerator,denominator)
     """
     k_edge, majority, minority = [], [], []
     for v in self.vertices:
@@ -144,7 +150,7 @@ class Graph:
     minority = [i for i, x in enumerate(signs) if x==min(set(signs), key = signs.count)]
     majority.extend([0,0,0,0]), minority.extend([0,0,0,0]), k_edge.extend([0,0,0,0]) # pad lists with zeros
 
-    # Q-function tuples of (nominator,denominator)
+    # Q-function tuples of (numerator,denominator)
     Qpm = (
       2*f(k)+f(k_edge[0])+f(k_edge[1]),
       f(k_edge[0])+f(k_edge[1])
@@ -154,7 +160,7 @@ class Graph:
       (f(k_edge[majority[0]])+f(k_edge[minority[0]]))*(f(k_edge[majority[1]])+f(k_edge[minority[0]]))
     )
 
-    # dictionary of (nominator,denominator) where key is the pair (number of
+    # dictionary of (numerator,denominator) where key is the pair (number of
     # propagators, sum of signs) e.g. (2,0) = Qpm, (3,1) = Qppm
     dict_freq = {
       (0,0): (1,1), 
@@ -166,28 +172,27 @@ class Graph:
     }
     return dict_freq[(len(signs),int(abs(sum(signs))))]
 
-  def _calculate_multiplicity(self):
-    '''
-    Calculates the multiplicity of the symmetrized graph using the formula: N_perm = E!/(B!*W!*(E-B-W)!) where E, B, W are the number of empty, black and white dots for each vertex
-    Output: an integer number
-    '''
-    #TODO Maybe use filters (higher order function)
-    import math 
-    symmetry=1
-    for item in self.vertices:
-      num_E=0
-      num_B=0
-      num_C=0
-      for e in item._out:
+  def calculate_multiplicity(self):
+    """Calculates the multiplicity of the symmetrized graph.
+    
+    Returns:
+      int: the multiplicity
+    """
+    mult = 1
+    for v in self.vertices:
+      num_E = 0
+      num_B = 0
+      num_C = 0
+      for e in v._out:
         if e.end == None:
-          num_E+=1
+          num_E += 1
         else:
           if len(e.end._out) == 0:
-            num_C+=1
+            num_C += 1
           else:
-            num_B+=1
-      symmetry*=math.factorial(len(item._out))/(math.factorial(num_E)*math.factorial(num_B)*math.factorial(num_C))
-    return int(symmetry)
+            num_B += 1
+      mult *= math.factorial(len(v._out))/(math.factorial(num_E)*math.factorial(num_B)*math.factorial(num_C))
+    return int(mult)
 
   def convert(self,model):
     """Converts the graph into a symbolic expression.
@@ -200,21 +205,41 @@ class Graph:
       model: object holding the model definition
 
     Returns:
-      tuple: (nominator,denominator)
+      Expression: the integrand
     """
-    nom,den = self._calculate_freq_integral(self.k,model.f)
+    num,den = self._calculate_freq_integral(self.k,model.f)
     for v in self.vertices:
       if v.degree == 2:
-        v2_nom,v2_den = model.v2(v._out[0].label,v._out[1].label,v._in[0].label)
-        nom *= v2_nom
+        v2_num,v2_den = model.v2(v._out[0].label,v._out[1].label,v._in[0].label)
+        num *= v2_num
         den *= v2_den
       elif v.degree == 3:
-        v3_nom,v3_den = model.v3(v._out[0].label,v._out[1].label,v._out[2].label,v._in[0].label)
-        nom *= v3_nom
+        v3_num,v3_den = model.v3(v._out[0].label,v._out[1].label,v._out[2].label,v._in[0].label)
+        num *= v3_num
         den *= v3_den
-    nom *= self._calculate_multiplicity()*model.D*self.k**model.alpha
+    num *= self.calculate_multiplicity()*model.D*self.k**model.alpha
     den *= model.f(self.k)
-    return (nom,den)
+    return symbolic.Expression(num,den)
+
+  def convert_perm(self,model,k,p):
+    """Converts the graph into a list of symbolic expression.
+
+    Calculates all permutations of outgoing wave vectors p and determines
+    their symbol expressions.
+
+    Arguments:
+      model: object holding the model definition
+      p (list): list of n outgoing wave vectors (Vector)
+
+    Returns:
+      list: of Expression objects
+    """
+    perm = itertools.permutations(p)
+    exprs = []
+    for _p in perm:
+      self.label_edges(k,list(_p))
+      exprs.append(self.convert(model))
+    return exprs
 
   def plot_graph(self):
     """Plots the graph using the feynman package.
@@ -228,8 +253,7 @@ class Graph:
     plt.show()
 
   def export_latex_graph(self,filename):
-    '''Transforms the graph into a TeX file.
-    '''
+    """Transforms the graph into a TeX file."""
     with open(f'{filename}.tex','w') as file:
       file.write(r'\documentclass[11pt,a4paper,border={1pt 1pt 16pt 1pt},varwidth]{standalone}' '\n' r'\usepackage[top=15mm,bottom=12mm,left=30mm,right=30mm,head=12mm,includeheadfoot]{geometry}' '\n' r'\usepackage{graphicx,color,soul}' '\n' r'\usepackage[compat=1.1.0]{tikz-feynman}' '\n' r'\usepackage{XCharter}' '\n' r'\begin{document}' '\n' r'\thispagestyle{empty}' '\n' r'\begin{figure*}[t]' '\n \t' r'\hspace{-0.4cm}\feynmandiagram [small,horizontal=root to v0] {' '\n')
       num_leaf=0     
