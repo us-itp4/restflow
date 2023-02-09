@@ -110,8 +110,8 @@ class Graph:
     Requires a single-loop graph with a single correlation function.
 
     Arguments:
-      k (Vector): internal wave vector
-      p (list): list of n outgoing wave vectors (Vector)
+      k (Vector or VectorAdd): internal wave vector
+      p (list): list of n outgoing wave vectors (Vector or VectorAdd)
     """
     self.k = k
     p = p.copy()
@@ -144,7 +144,7 @@ class Graph:
         k_edge.append(v._in[0].label)
     k2_edge = [_k*k for _k in k_edge]
     # extract the sign of the k wavector
-    _ksep = sympy.symbols('k')
+    _ksep = sympy.symbols('k')    # <-- TODO: bad practice to hardcode the symbol
     signs = [item.coeff(_ksep**2) for item in k2_edge]
     majority = [i for i, x in enumerate(signs) if x==max(set(signs), key = signs.count)]
     minority = [i for i, x in enumerate(signs) if x==min(set(signs), key = signs.count)]
@@ -174,7 +174,7 @@ class Graph:
 
   def calculate_multiplicity(self):
     """Calculates the multiplicity of the symmetrized graph.
-    
+
     Returns:
       int: the multiplicity
     """
@@ -225,18 +225,18 @@ class Graph:
     """Converts the graph into a list of symbolic expression.
 
     Calculates all permutations of outgoing wave vectors p and determines
-    their symbol expressions.
+    their symbol expressions. Note that this method relabels graph edges.
 
     Arguments:
       model: object holding the model definition
+      k (Vector): internal wave vector
       p (list): list of n outgoing wave vectors (Vector)
 
     Returns:
       list: of Expression objects
     """
-    perm = itertools.permutations(p)
     exprs = []
-    for _p in perm:
+    for _p in itertools.permutations(p):
       self.label_edges(k,list(_p))
       exprs.append(self.convert(model))
     return exprs

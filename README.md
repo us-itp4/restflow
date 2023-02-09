@@ -1,60 +1,94 @@
 # RESTFLOW
 
-`restflow` is a Python package, implemented using Sympy, for calculating symbolically the flow equations based on Wilsonian Renormalization Group Theory made for applications in statistical physics.
-
 - [Overview](#overview)
-- [System requirements](#system-requirements)
-- [Installation](#installation)
-- [Description of scripts](#description-of-scripts)
+- [Requirements](#requirements)
+- [How to use](#how-to-use)
 
 ## Overview
 
-`restflow` employs sympy to calculate the flow equations for a given dynamical system (equilibrium or non-equilibrium). Given the feynman diagrams, it symbolically solves the integrals and extracts their contributions to the vertex functions. This allows it to overcome tedious calculations arising from perturbation theory. It applies Wilsonian renormalization group theory for a shell of momenta to obtain continuous flow equations. For more information, the following review summarizes the underlying theory and the notations used [TODO: Inserts manuscript].
+`restflow` is a Python package based on [sympy](https://www.sympy.org/) for calculating _symbolically_ the perturbative flow equations of dynamic renormalization. It is a companion package to the manuscript
 
-## System requirements
+- xxx
 
-### Hardware requirements
+When using the package in your academic work, you need to cite this manuscript. For details on the physics and math, consult the manuscript.
 
-`restflow` can be run on a standard personal computer. It has been tested on the following setup (without GPU):
+At the moment, `restflow` handles 1-loop graphs with complex 2-vertices and simple 3-vertices. A complex vertex function depends on the outgoing wave vectors while simple vertex functions do not contribute wave vectors to the integrand. This is work in progress, be aware that there is almost no checks and error handling.
 
-+ CPU 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+## Requirements
 
-### Software requirements
+TODO
 
-This package has been tested on the following systems with 3.10.9:
+## How to use
 
-+ Windows 10:
-
-`restflow` mainly depends on the following Python packages:
-
-* sympy
-* matplotlib
-* numpy
-* scipy
-* feynman
-
-## Installation
-
-
-#### Directly from the source: clone `restflow` from GitHub
-```bash
-https://github.tik.uni-stuttgart.de/ac141876/restflow.git
+The best way to learn is probably to look at the examples. To start, import the following
 ```
-
-## Getting started
-
-The package can be used by importing the `restflow` module and its submodules:
-```python
+import sympy
 import restflow
 ```
 
-## Description of scripts
+### Symbolic vectors
 
-The important scripts of the package are located in `/restflow`
+You need to create symbolic wave vectors that label the graph edges. To this end, create a `Context` object and tell it about the dot products that will occur.
+```
+_k,_q,dot_kq = sympy.symbols('k q (k·q)')   # sympy symbols for vectors
+ctx = symvec.Context()
+ctx.add_dot_product(_q,_k,dot_kq)
+k = ctx.vector(_k)                          # wrap into a symbolic Vector
+q = ctx.vector(_q)
+```
 
-* `symtools.py`: Extends functions of `sympy` (e.g. Taylor expansions) for multivariate functions.
-* `symvec.py`: Implements symbolically vectors using sympy. It further symbolically solves the Feynman diagrams
-* `graph.py`: Maps a graphical Feynman diagram into an integral. It has option to extract the graph into a LaTeX file.
-* `integrals.py`: Iterates and solves the `graph.py` for all the possible graphs given a symmetrized Feynman diagram (by permutating the external leg labels). 
-* `neural_networks.ipynb`: Applies `restflow` for a Neural Network Model.
-* `example.ipynb`: Applies `restflow` for 2 simple cases of the KPZ model.
+### The model
+
+The next step is to implement the actual model in a class. This class must implement the following attributes and methods (but only the vertex functions that are needed)
+```
+class TheModel:
+    def __init__(self):
+        self.alpha = 0                  # noise exponent
+        self.D = sympy.symbols('D')     # noise strength
+        # further model parameters...
+    
+    def f(self,k):
+        # from the propagator
+
+    def v2(self,k1,k2,q):
+        # vertex function with one incoming and two outgoing lines
+        # k1,k2 are the incoming wave vectors and q is their sum
+
+    def v3(self,k1,k2,3,q):
+        # vertex function with one incoming and three outgoing lines
+```
+
+### Graphs
+
+You now need to create a directed graph. To this end, you create vertices and link them together like this
+```
+v = [restflow.Vertex() for i in range(3)]
+v[0].link_vertex(v[1])                  # add line from v[0] to v[1]
+...
+v[2].add_outgoing()
+```
+An outgoing line is added with `add_outgoing()`. Both `link_vertex` and `add_outgoing` except an argument `angle` that specifies the angle with the x axis of the line, which is needed for calling `g.plot_graph()`.
+
+You can now create the graph `g=restflow.Graph(v)`. You need to label the lines, which is achieved by calling `g.label_edges(k,[q])`. The second argument is a list of outgoing wave vectors (in our example composed of `k` and `q`, c.f [here](#symbolic-vectors)), which must agree with the number of outgoing legs. You should now `g.plot_graph()` to check for mistakes.
+
+### Integrals
+
+If you are satisfied with the graph, you can convert the graph into a symbolic expression calling
+```
+m = TheModel()
+expr = g.convert(m)
+```
+to which you pass your model definition. Alternatively, you can create a list of symbolic expressions for each permutation of the outgoing legs,
+```
+exprs = g.convert_perm(m,k,[q,p-q])
+```
+The final step is to integrate these expression(s)
+```
+res = restflow.integrate([expr],3,k,q)
+```
+The arguments here are the list of symbolic expressions for the graph (will be summed), the expansion order, the internal wave vector (the integration variable), and the external wave vector.
+
+### Examples
+
+* `kpz.ipynb`: Applies `restflow` to the famous KPZ model.
+* `neural_network.ipynb`: Applies `restflow` to a neural network model.
