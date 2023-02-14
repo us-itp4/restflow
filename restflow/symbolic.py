@@ -97,17 +97,17 @@ class Expression:
         # keep only the cs_psi dependence
         expr = expr.subs(si_psi**2,1-cs_psi**2)
         # integrate
-        expr = expr.subs(x**2,1/d)
+        expr = expr.subs(x**2,1/dim)
         expr = expr.subs(x,0)
         # treat remaining cos_theta
-        expr = _integrate_theta(expr,cs,d)       
+        expr = _integrate_theta(expr,cs,dim)       
         # Factorizes the expression in powers of q and p
         expr = sympy.Poly(expr,q.sym,p.sym).as_expr()
-        return _integrate_magnitude(expr,k,d)
+        return _integrate_magnitude(expr,k,dim)
 
 def integrate(exprs,n,k,q,p=None):
   """
-  Calculates the angular integrals of all the symbolic graph expressions and
+  Calculates the integrals of all the symbolic graph expressions and
   adds them up.
 
   Arguments:
@@ -118,7 +118,7 @@ def integrate(exprs,n,k,q,p=None):
   """
   if p is None:
     arr = [expr.integrate1(n,k,q) for expr in exprs]
-    return sympy.Poly(sum(arr)/len(exprs),q.sym).as_expr()
+    return sympy.simplify(sympy.Poly(sum(arr)/len(exprs),q.sym).as_expr())
   else:
     arr = [expr.integrate2(n,k,q,p) for expr in exprs]
-    return sympy.Poly(sum(arr)/len(exprs),q.sym,p.sym).as_expr()
+    return sympy.simplify(sympy.Poly(sum(arr)/len(exprs),q.sym,p.sym).as_expr())

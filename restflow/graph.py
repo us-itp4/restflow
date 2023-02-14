@@ -104,6 +104,14 @@ class Graph:
     self.root = vertices[0]
     self.root._in.append(Edge(end=self.root)) # add incoming edge
 
+  def _reset_labels(self):
+    """Deletes all the labels of the edges"""
+    for vertex in self.vertices:
+      for e_in in vertex._in:
+        e_in.label = None
+      for e_out in vertex._out:
+        e_out.label = None
+
   def label_edges(self,k,p):
     """Label all edges with the corresponding wave vector.
 
@@ -113,6 +121,7 @@ class Graph:
       k (Vector or VectorAdd): internal wave vector
       p (list): list of n outgoing wave vectors (Vector or VectorAdd)
     """
+    self._reset_labels()  #clears the previous labels to replace them
     self.k = k
     p = p.copy()
     # label external legs
@@ -127,13 +136,13 @@ class Graph:
     # now label all internal edges obeying "momentum conservation"
     self.root._assign_label()
 
-  def _calculate_freq_integral(self,k,f):
+  def _calculate_freq_integral(self,k,f,p):
     """Determines the result of the frequency integration.
 
     Arguments:
       k (Vector): internal wave vector
       f (func): propagator function
-
+      p (list): list of n outgoing wave vectors (Vector)
     Returns:
       tuple: (numerator,denominator)
     """
@@ -142,10 +151,19 @@ class Graph:
       # makes list of intermediate edge wave vectors excluding external legs
       if v.degree > 0 and v._in[0].end != None and v._in[0].start != None:
         k_edge.append(v._in[0].label)
+
     k2_edge = [_k*k for _k in k_edge]
     # extract the sign of the k wavector
-    _ksep = sympy.symbols('k')    # <-- TODO: bad practice to hardcode the symbol
-    signs = [item.coeff(_ksep**2) for item in k2_edge]
+    num_prop = len(k_edge)
+    signs = [0]*num_prop
+    for i in range(len(k2_edge)):
+      k2_edge[i] = k2_edge[i].subs([(external**2,0) for external in p]) # set external legs^2 to 0
+      for term in k2_edge[i].as_ordered_terms():  # for the remaining monomials
+          coeff, _ = term.as_coeff_Mul()
+          expr=term**2  # to avoid vector complications
+          if expr.is_Pow and expr.exp == 4: # if monomial is x^4 
+              signs[i]=coeff  # extract its coefficient
+
     majority = [i for i, x in enumerate(signs) if x==max(set(signs), key = signs.count)]
     minority = [i for i, x in enumerate(signs) if x==min(set(signs), key = signs.count)]
     majority.extend([0,0,0,0]), minority.extend([0,0,0,0]), k_edge.extend([0,0,0,0]) # pad lists with zeros
@@ -194,7 +212,7 @@ class Graph:
       mult *= math.factorial(len(v._out))/(math.factorial(num_E)*math.factorial(num_B)*math.factorial(num_C))
     return int(mult)
 
-  def convert(self,model):
+  def convert(self,model,p):
     """Converts the graph into a symbolic expression.
 
     This methods produces a symbolic representation of the graph, which
@@ -203,11 +221,12 @@ class Graph:
 
     Arguments:
       model: object holding the model definition
+      p (list): list of n outgoing wave vectors (Vector)
 
     Returns:
       Expression: the integrand
     """
-    num,den = self._calculate_freq_integral(self.k,model.f)
+    num,den = self._calculate_freq_integral(self.k,model.f,p)
     for v in self.vertices:
       if v.degree == 2:
         v2_num,v2_den = model.v2(v._out[0].label,v._out[1].label,v._in[0].label)
@@ -238,7 +257,7 @@ class Graph:
     exprs = []
     for _p in itertools.permutations(p):
       self.label_edges(k,list(_p))
-      exprs.append(self.convert(model))
+      exprs.append(self.convert(model,p))
     return exprs
 
   def plot_graph(self):
