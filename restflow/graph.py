@@ -38,19 +38,27 @@ class Vertex:
   def degree(self):
     return len(self._out)
 
-  def link_vertex(self,v,angle):
+  def link_vertex(self,v,angle=None):
     """Link this vertex to another vertex.
 
     Arguments:
       v (Vertex): target vertex
       angle (real): orientation hint for edge in units of 2π
     """
-    e = Edge(start=self,end=v,angle=angle)
+    if angle == None:
+      e = Edge(start=self, end=v)
+    else:
+      e = Edge(start=self, end=v, angle=angle)
+
     self._out.append(e)
     v._in.append(e)
 
-  def add_outgoing(self,angle):
-    e = Edge(start=self,angle=angle)
+  def add_outgoing(self,angle=None):
+    if angle == None: 
+      e = Edge(start=self)
+    else:
+      e = Edge(start=self, angle=angle)
+
     self._out.append(e)
 
   def _assign_label(self):
@@ -112,7 +120,7 @@ class Graph:
       for e_out in vertex._out:
         e_out.label = None
 
-  def label_edges(self,k,p):
+  def label_edges(self,labels):
     """Label all edges with the corresponding wave vector.
 
     Requires a single-loop graph with a single correlation function.
@@ -122,7 +130,9 @@ class Graph:
       p (list): list of n outgoing wave vectors (Vector or VectorAdd)
     """
     self._reset_labels()  #clears the previous labels to replace them
-    self.k = k
+    k = labels[0]
+    self.k = labels[0]
+    p = [item for item in labels[1:]]
     p = p.copy()
     # label external legs
     for v in self.vertices:
@@ -136,7 +146,19 @@ class Graph:
     # now label all internal edges obeying "momentum conservation"
     self.root._assign_label()
 
-  def _calculate_freq_integral(self,k,f,p):
+  def _ext_vec(self):
+    """Calculates array of square of labels of external legs"""
+    ext_array=[]
+    for v in self.vertices:
+     if v.degree > 0:
+      for leaf in v._out:
+        if leaf.end == None:
+          ext_array.append(leaf.label)
+      if v._in[0].start == None:
+        ext_array.append(v._in[0].label)
+    return [element**2 for element in ext_array]
+
+  def _calculate_freq_integral(self,k,f):
     """Determines the result of the frequency integration.
 
     Arguments:
@@ -152,12 +174,16 @@ class Graph:
       if v.degree > 0 and v._in[0].end != None and v._in[0].start != None:
         k_edge.append(v._in[0].label)
 
+    #load array of external legs
+    ext_array=self._ext_vec()
+    #multiply by sink vector
     k2_edge = [_k*k for _k in k_edge]
+
     # extract the sign of the k wavector
     num_prop = len(k_edge)
     signs = [0]*num_prop
     for i in range(len(k2_edge)):
-      k2_edge[i] = k2_edge[i].subs([(external**2,0) for external in p]) # set external legs^2 to 0
+      k2_edge[i] = k2_edge[i].subs([(external,0) for external in ext_array]) # set external legs^2 to 0
       for term in k2_edge[i].as_ordered_terms():  # for the remaining monomials
           coeff, _ = term.as_coeff_Mul()
           expr=term**2  # to avoid vector complications
@@ -212,7 +238,7 @@ class Graph:
       mult *= math.factorial(len(v._out))/(math.factorial(num_E)*math.factorial(num_B)*math.factorial(num_C))
     return int(mult)
 
-  def convert(self,model,p):
+  def convert(self, model):
     """Converts the graph into a symbolic expression.
 
     This methods produces a symbolic representation of the graph, which
@@ -226,7 +252,8 @@ class Graph:
     Returns:
       Expression: the integrand
     """
-    num,den = self._calculate_freq_integral(self.k,model.f,p)
+    
+    num,den = self._calculate_freq_integral(self.k,model.f)
     for v in self.vertices:
       if v.degree == 2:
         v2_num,v2_den = model.v2(v._out[0].label,v._out[1].label,v._in[0].label)
@@ -240,7 +267,7 @@ class Graph:
     den *= model.f(self.k)
     return symbolic.Expression(num,den)
 
-  def convert_perm(self,model,k,p):
+  def convert_perm(self,model, labels):
     """Converts the graph into a list of symbolic expression.
 
     Calculates all permutations of outgoing wave vectors p and determines
@@ -255,9 +282,13 @@ class Graph:
       list: of Expression objects
     """
     exprs = []
+    k = labels[0]
+    self.k = labels[0]
+    p = [item for item in labels[1:]]
+    p = p.copy()
     for _p in itertools.permutations(p):
-      self.label_edges(k,list(_p))
-      exprs.append(self.convert(model,p))
+      self.label_edges([k]+list(_p))
+      exprs.append(self.convert(model))
     return exprs
 
   def plot_graph(self):

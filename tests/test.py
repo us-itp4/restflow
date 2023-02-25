@@ -72,21 +72,22 @@ class Testclass(unittest.TestCase):
     def test_label_edges(self):
         #kpz figure
         v = [restflow.Vertex() for i in range(3)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[1].link_vertex(v[2],0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[1].link_vertex(v[2])
         v[1].add_outgoing(0)
         g = restflow.Graph(v)
-        g.label_edges(k,[q])
+        labels = [k, q]
+        g.label_edges(labels)
 
         n = [restflow.Vertex() for i in range(3)]
-        n[0].link_vertex(n[1],0)
+        n[0].link_vertex(n[1])
         n[0]._out[0].label = q-k
-        n[0].link_vertex(n[2],0)
+        n[0].link_vertex(n[2])
         n[0]._out[1].label = k
-        n[1].link_vertex(n[2],0)
+        n[1].link_vertex(n[2])
         n[1]._out[0].label = -k
-        n[1].add_outgoing(0)
+        n[1].add_outgoing()
         n[1]._out[1].label = q
         h = restflow.Graph(n)
         h.vertices[0]._in[0].label=q
@@ -94,35 +95,36 @@ class Testclass(unittest.TestCase):
         for i in range(len(g.vertices)):
             for j in range(len(g.vertices[i]._in)):
                 self.assertEqual((g.vertices[i]._in[j].label)**2, (h.vertices[i]._in[j].label)**2)
-
+        
         v = [restflow.Vertex() for i in range(5)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[2].link_vertex(v[3],0)
-        v[3].link_vertex(v[4],0)
-        v[4].link_vertex(v[1],0)
-        v[2].add_outgoing(0)
-        v[3].add_outgoing(0)
-        v[4].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[2].link_vertex(v[3])
+        v[3].link_vertex(v[4])
+        v[4].link_vertex(v[1])
+        v[2].add_outgoing()
+        v[3].add_outgoing()
+        v[4].add_outgoing()
         g = restflow.Graph(v)
-        g.label_edges(k,[p,r,q-p-r])
+        labels = [k, p,r,q-p-r]
+        g.label_edges(labels)
 
         n = [restflow.Vertex() for i in range(5)]
-        n[0].link_vertex(n[1],0)
+        n[0].link_vertex(n[1])
         n[0]._out[0].label = k
-        n[0].link_vertex(n[2],0)
+        n[0].link_vertex(n[2])
         n[0]._out[1].label = q-k
-        n[2].link_vertex(n[3],0)
+        n[2].link_vertex(n[3])
         n[2]._out[0].label = q-k-p
-        n[3].link_vertex(n[4],0)
+        n[3].link_vertex(n[4])
         n[3]._out[0].label = q-k-p-r
-        n[4].link_vertex(n[1],0)
+        n[4].link_vertex(n[1])
         n[4]._out[0].label = -k
-        n[2].add_outgoing(0)
+        n[2].add_outgoing()
         n[2]._out[1].label = p
-        n[3].add_outgoing(0)
+        n[3].add_outgoing()
         n[3]._out[1].label = r
-        n[4].add_outgoing(0)
+        n[4].add_outgoing()
         n[4]._out[1].label = q-p-r
         h = restflow.Graph(n)
         h.vertices[0]._in[0].label = q
@@ -135,104 +137,109 @@ class Testclass(unittest.TestCase):
         model = AMBp()
         #graph k
         v = [restflow.Vertex() for i in range(5)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[2].link_vertex(v[3],0)
-        v[3].link_vertex(v[4],0)
-        v[4].link_vertex(v[1],0)
-        v[2].add_outgoing(0)
-        v[3].add_outgoing(0)
-        v[4].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[2].link_vertex(v[3])
+        v[3].link_vertex(v[4])
+        v[4].link_vertex(v[1])
+        v[2].add_outgoing()
+        v[3].add_outgoing()
+        v[4].add_outgoing()
         g1 = restflow.Graph(v)    
-        g1.label_edges(k,[p,r,q-p-r])
+        labels = [k, p, r, q-p-r]
+        g1.label_edges(labels)
         Q = 1/((model.f(k)+model.f(q-k))*(model.f(k)+model.f(q-p-k))*(model.f(k)+model.f(q-p-k-r)))
-        self.assertEqual(g1._calculate_freq_integral(g1.k,model.f,[p,r,q-p-r])[0]/g1._calculate_freq_integral(g1.k,model.f,[p,r,q-p-r])[1], Q)
+        self.assertEqual(g1._calculate_freq_integral(g1.k,model.f)[0]/g1._calculate_freq_integral(g1.k,model.f)[1], Q)
 
         #graph j
         v = [restflow.Vertex() for i in range(5)]
-        v[0].link_vertex(v[1],0)
-        v[1].link_vertex(v[2],0)
-        v[2].link_vertex(v[3],0)
-        v[0].link_vertex(v[4],0)
-        v[4].link_vertex(v[3],0)
-        v[1].add_outgoing(0)
-        v[2].add_outgoing(0)
-        v[4].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[1].link_vertex(v[2])
+        v[2].link_vertex(v[3])
+        v[0].link_vertex(v[4])
+        v[4].link_vertex(v[3])
+        v[1].add_outgoing()
+        v[2].add_outgoing()
+        v[4].add_outgoing()
         g2 = restflow.Graph(v)    
-        g2.label_edges(k,[p,r,q-p-r])
+        labels = [k, p, r, q-p-r]
+        g2.label_edges(labels)
         Qppm =(2*model.f(k)*(model.f(k)+model.f(p+r+k)+model.f(r+k)+model.f(q-p-r-k))+model.f(q-p-r-k)**2+model.f(p+r+k)*model.f(r+k)+model.f(p+r+k)*model.f(q-p-r-k)+model.f(r+k)*model.f(q-p-r-k))/((model.f(p+r+k)+model.f(q-p-r-k))*(model.f(r+k)+model.f(q-p-r-k)))
         Q = 1/((model.f(k)+model.f(p+r+k))*(model.f(k)+model.f(r+k))*(model.f(k)+model.f(q-p-r-k)))*Qppm
-        self.assertEqual(g2._calculate_freq_integral(g2.k,model.f,[p,r,q-p-r])[0]/g2._calculate_freq_integral(g2.k,model.f,[p,r,q-p-r])[1], Q)
+        self.assertEqual(g2._calculate_freq_integral(g2.k,model.f)[0]/g2._calculate_freq_integral(g2.k,model.f)[1], Q)
         
         #graph b
         v = [restflow.Vertex() for i in range(4)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[2].link_vertex(v[3],0)
-        v[3].link_vertex(v[1],0)
-        v[2].add_outgoing(0)
-        v[3].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[2].link_vertex(v[3])
+        v[3].link_vertex(v[1])
+        v[2].add_outgoing()
+        v[3].add_outgoing()
         g3 = restflow.Graph(v)
-        g3.label_edges(k,[p,q-p])
+        labels = [k, p, q-p]
+        g3.label_edges(labels)
         Q = 1/((model.f(k)+model.f(q-k))*(model.f(k)+model.f(q-p-k)))
-        self.assertEqual(g3._calculate_freq_integral(g3.k,model.f,[p,r,q-p-r])[0]/g3._calculate_freq_integral(g3.k,model.f,[p,r,q-p-r])[1], Q) 
+        self.assertEqual(g3._calculate_freq_integral(g3.k,model.f)[0]/g3._calculate_freq_integral(g3.k,model.f)[1], Q) 
 
         #graph a
         v = [restflow.Vertex() for i in range(4)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[1].link_vertex(v[3],0)
-        v[2].link_vertex(v[3],0)
-        v[1].add_outgoing(0)
-        v[2].add_outgoing(0)# example: Figure (a) from above graph
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[1].link_vertex(v[3])
+        v[2].link_vertex(v[3])
+        v[1].add_outgoing()
+        v[2].add_outgoing()# example: Figure (a) from above graph
         g4 = restflow.Graph(v)
-        g4.label_edges(k,[p,q-p])
+        labels = [k, p, q-p]
+        g4.label_edges(labels)
         Q = 1/((model.f(k)+model.f(p+k))*(model.f(k)+model.f(q-p-k)))*(2*model.f(k)+model.f(p+k)+model.f(q-p-k))/(model.f(p+k)+model.f(q-p-k))
-        self.assertEqual(g4._calculate_freq_integral(g4.k,model.f,[p,r,q-p-r])[0]/g4._calculate_freq_integral(g4.k,model.f,[p,r,q-p-r])[1], Q)
+        self.assertEqual(g4._calculate_freq_integral(g4.k,model.f)[0]/g4._calculate_freq_integral(g4.k,model.f)[1], Q)
 
         #kpz diagram
         v = [restflow.Vertex() for i in range(3)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[1].link_vertex(v[2],0)
-        v[1].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[1].link_vertex(v[2])
+        v[1].add_outgoing()
         g5 = restflow.Graph(v)
-        g5.label_edges(k,[q])
+        labels = [k, q]
+        g5.label_edges(labels)
         Q = 1/(model.f(q-k)+model.f(k))
-        self.assertEqual(g5._calculate_freq_integral(g5.k,model.f,[p,r,q-p-r])[0]/g5._calculate_freq_integral(g5.k,model.f,[p,r,q-p-r])[1], Q)
+        self.assertEqual(g5._calculate_freq_integral(g5.k,model.f)[0]/g5._calculate_freq_integral(g5.k,model.f)[1], Q)
 
     def test_multiplicity(self):
         #graph d
         v = [restflow.Vertex() for i in range(3)]
-        v[0].link_vertex(v[1],0)
-        v[0].add_outgoing(0)
-        v[0].link_vertex(v[2],0)
-        v[2].link_vertex(v[1],0)
-        v[2].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[0].add_outgoing()
+        v[0].link_vertex(v[2])
+        v[2].link_vertex(v[1])
+        v[2].add_outgoing()
         g1 = restflow.Graph(v)
         self.assertEqual(g1.calculate_multiplicity(), 12)
 
         #graph j
         v = [restflow.Vertex() for i in range(5)]
-        v[0].link_vertex(v[1],0)
-        v[1].link_vertex(v[2],0)
-        v[2].link_vertex(v[3],0)
-        v[0].link_vertex(v[4],0)
-        v[4].link_vertex(v[3],0)
-        v[1].add_outgoing(0)
-        v[2].add_outgoing(0)
-        v[4].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[1].link_vertex(v[2])
+        v[2].link_vertex(v[3])
+        v[0].link_vertex(v[4])
+        v[4].link_vertex(v[3])
+        v[1].add_outgoing()
+        v[2].add_outgoing()
+        v[4].add_outgoing()
         g2 = restflow.Graph(v)
         self.assertEqual(g2.calculate_multiplicity(), 8)
 
         v = [restflow.Vertex() for i in range(4)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[2].link_vertex(v[3],0)
-        v[3].link_vertex(v[1],0)
-        v[0].add_outgoing(0)
-        v[2].add_outgoing(0)
-        v[3].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[2].link_vertex(v[3])
+        v[3].link_vertex(v[1])
+        v[0].add_outgoing()
+        v[2].add_outgoing()
+        v[3].add_outgoing()
         g3 = restflow.Graph(v)
         self.assertEqual(g3.calculate_multiplicity(), 24)
 
@@ -240,41 +247,44 @@ class Testclass(unittest.TestCase):
         model = AMBp()
         #kpz
         v = [restflow.Vertex() for i in range(3)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[1].link_vertex(v[2],0)
-        v[1].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[1].link_vertex(v[2])
+        v[1].add_outgoing()
         g1 = restflow.Graph(v)
-        g1.label_edges(k,[q])
-        nom, den = g1.convert(model,[q]).num, g1.convert(model,[q]).den
-        Itruth =  model.D*g1.k**model.alpha*g1.calculate_multiplicity()*g1._calculate_freq_integral(g1.k,model.f,[q])[0]*model.v2(k,q-k,q)[0]*model.v2(-k,q,q-k)[0]/(model.f(g1.k)*g1._calculate_freq_integral(g1.k,model.f,[q])[1]*model.v2(k,q-k,q)[1]*model.v2(-k,q,q-k)[1])
+        labels = [k, q]
+        g1.label_edges(labels)
+        nom, den = g1.convert(model).num, g1.convert(model).den
+        Itruth =  model.D*g1.k**model.alpha*g1.calculate_multiplicity()*g1._calculate_freq_integral(g1.k,model.f)[0]*model.v2(k,q-k,q)[0]*model.v2(-k,q,q-k)[0]/(model.f(g1.k)*g1._calculate_freq_integral(g1.k,model.f)[1]*model.v2(k,q-k,q)[1]*model.v2(-k,q,q-k)[1])
         self.assertEqual(nom/den, Itruth)
 
         #figure c
         v = [restflow.Vertex() for i in range(3)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[2].link_vertex(v[1],0)
-        v[2].add_outgoing(0)
-        v[2].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[2].link_vertex(v[1])
+        v[2].add_outgoing()
+        v[2].add_outgoing()
         g2 = restflow.Graph(v)
-        g2.label_edges(k,[q-p,p])
-        nom, den = g2.convert(model,[q-p,p]).num, g2.convert(model,[q-p,p]).den
-        Itruth = model.D*g2.k**model.alpha*  g2.calculate_multiplicity()*g2._calculate_freq_integral(g2.k,model.f,[q-p,p])[0]*model.v2(k,q-k,q)[0]*model.v3(-k,p,q-p,q-k)[0]/(model.f(g2.k)*g2._calculate_freq_integral(g2.k,model.f,[q-p,p])[1]*model.v2(k,q-k,q)[1]*model.v3(-k,p,q-p,q-k)[1])
+        labels = [k, q-p, p]
+        g2.label_edges(labels)
+        nom, den = g2.convert(model).num, g2.convert(model).den
+        Itruth = model.D*g2.k**model.alpha*  g2.calculate_multiplicity()*g2._calculate_freq_integral(g2.k,model.f)[0]*model.v2(k,q-k,q)[0]*model.v3(-k,p,q-p,q-k)[0]/(model.f(g2.k)*g2._calculate_freq_integral(g2.k,model.f)[1]*model.v2(k,q-k,q)[1]*model.v3(-k,p,q-p,q-k)[1])
         self.assertEqual(nom/den, Itruth)
 
         #figure 3c
         v = [restflow.Vertex() for i in range(3)]
-        v[0].link_vertex(v[1],0)
-        v[0].link_vertex(v[2],0)
-        v[2].link_vertex(v[1],0)
-        v[0].add_outgoing(0)
-        v[2].add_outgoing(0)
-        v[2].add_outgoing(0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[2].link_vertex(v[1])
+        v[0].add_outgoing()
+        v[2].add_outgoing()
+        v[2].add_outgoing()
         g3 = restflow.Graph(v)
-        g3.label_edges(k,[p,r,q-p-r])
-        nom, den = g3.convert(model,[q-p,p]).num, g3.convert(model,[q-p,p]).den
-        Itruth = model.D*g3.k**model.alpha*g3.calculate_multiplicity()*g3._calculate_freq_integral(g3.k,model.f,[p,r,q-p-r])[0]*model.v3(k,p,q-p-k,q)[0]*model.v3(r,q-p-r,-k,q-p-k)[0]/(model.f(g3.k)*g3._calculate_freq_integral(g3.k,model.f,[p,r,q-p-r])[1]*model.v3(k,p,q-p-k,q)[1]*model.v3(r,q-p-r,-k,q-p-k)[1])
+        labels = [k, p, r, q-p-r]
+        g3.label_edges(labels)
+        nom, den = g3.convert(model).num, g3.convert(model).den
+        Itruth = model.D*g3.k**model.alpha*g3.calculate_multiplicity()*g3._calculate_freq_integral(g3.k,model.f)[0]*model.v3(k,p,q-p-k,q)[0]*model.v3(r,q-p-r,-k,q-p-k)[0]/(model.f(g3.k)*g3._calculate_freq_integral(g3.k,model.f)[1]*model.v3(k,p,q-p-k,q)[1]*model.v3(r,q-p-r,-k,q-p-k)[1])
         self.assertEqual(nom/den, Itruth)
 
     def test_symmetrize(self):
@@ -294,22 +304,23 @@ class Testclass(unittest.TestCase):
 
         # graph (d)
         v = [restflow.Vertex() for i in range(3)]
-        v[0].link_vertex(v[1], 0.12)
-        v[0].link_vertex(v[2], 0.0)
-        v[2].link_vertex(v[1], 0.0)
-        v[0].add_outgoing(-0.12)
-        v[2].add_outgoing(0.0)
+        v[0].link_vertex(v[1])
+        v[0].link_vertex(v[2])
+        v[2].link_vertex(v[1])
+        v[0].add_outgoing()
+        v[2].add_outgoing()
         g = restflow.Graph(v)
-        exprs = g.convert_perm(model,k,[p,q-p])
-        Ic = restflow.integrate(exprs,3,k,q,p)
-        g.label_edges(k,[p,q-p])
-        expr = g.convert(model,[p,q-p])
-        Ic1 = restflow.integrate([expr],3,k,q,p)
-        g.label_edges(k,[q-p,p])
-        expr = g.convert(model,[q-p,p])
-        Ic2 = restflow.integrate([expr],3,k,q,p)
+        exprs = g.convert_perm(model,[k,p,q-p])
+        Ic = restflow.integrate(exprs,3,[k,p,q-p])
+        labels = [k, p, q-p]
+        g.label_edges(labels)
+        expr = g.convert(model)
+        Ic1 = restflow.integrate([expr],3,labels)
+        labels = [k, q-p, p]
+        g.label_edges(labels)
+        expr = g.convert(model)
+        Ic2 = restflow.integrate([expr],3,labels)
         Ictotal= sympy.simplify(sympy.Poly((Ic1+Ic2)/2,q.sym).as_expr())
-        
         self.assertEqual(Ic, Ictotal)
 
 if __name__ == '__main__':

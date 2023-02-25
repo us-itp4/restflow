@@ -1,5 +1,6 @@
 import sympy
 from restflow import symtools
+from restflow import symvec
 
 # global symbols
 K_d, Lambda, delta_l, dim = sympy.symbols('K_d Lambda δl d')
@@ -105,20 +106,61 @@ class Expression:
         expr = sympy.Poly(expr,q.sym,p.sym).as_expr()
         return _integrate_magnitude(expr,k,dim)
 
-def integrate(exprs,n,k,q,p=None):
+def _find_int_variable(labels):
+  """Finds the integration variable (k), the ingoing vector (q) and the outgoing vectors
+  Uses the fact that: The (k) is repeated once in the labels array, the (q) is repeated once in the outgoing vectors (conservation of momentum)
+
+  Arguments:
+      labels (array): input vectors [v1, v2,...,vn] with v1 the sink vector and v2+...+vn = q
+  Returns:
+      k, q, p: 3 Vector objects
+  """
+
+  # array with  free vectors of sink vector
+  k_array = [labels[0]] if isinstance(labels[0], symvec.Vector) else labels[0].free_symvec()
+
+  p_array = [] # free vectors of each external leg
+  total_array = []  # free vectors of each element in labels
+  for element in labels[1:]:  # for loop for external legs
+    if type(element) == symvec.Vector: 
+        p_array = p_array + [element]
+    else:
+        p_array = p_array + element.free_symvec()
+  total_array = total_array + k_array + p_array
+
+  p_array_2 = [element**2 for element in p_array] # used for .count function
+  total_array_2 =[element**2 for element in total_array]
+
+  # index of element in p_array repeated only once
+  index_q = next((i for i, elem in enumerate(p_array_2) if p_array_2.count(elem) == 1), -1)
+  q = p_array[index_q]
+  # index of element in total_array repeated only once
+  index_k = next((i for i, elem in enumerate(total_array_2) if total_array_2.count(elem) == 1 and total_array_2[i] != q**2), -1)  # if only one external leg then (k) should not be (q)
+  k = total_array[index_k]
+
+  if len(p_array)==1:
+    p = None
+  else:
+    p = p_array[index_q-1]  # q repeated only once so rest is p
+  return k, q, p 
+
+def integrate(exprs, n, labels):
   """
   Calculates the integrals of all the symbolic graph expressions and
   adds them up.
 
   Arguments:
     exprs (list): of symbolic.Expression
-    k (Vector): integration variable
-    labels (list): of outgoing wave vectors
     n (int): expansion order
+    labels (list): of sink vector and outgoing wave vectors
   """
+  k, q, p = _find_int_variable(labels)
+
   if p is None:
     arr = [expr.integrate1(n,k,q) for expr in exprs]
     return sympy.simplify(sympy.Poly(sum(arr)/len(exprs),q.sym).as_expr())
   else:
     arr = [expr.integrate2(n,k,q,p) for expr in exprs]
     return sympy.simplify(sympy.Poly(sum(arr)/len(exprs),q.sym,p.sym).as_expr())
+
+        

@@ -56,6 +56,31 @@ class VectorAdd:
         else:
             raise ValueError
 
+    def free_symvec(self):
+        """
+        Method to find the free symbolic vectors of an expression.
+
+        Returns:
+            new_list (array): Symbolic vectors composing an expression
+        """
+        monomials = [] # array with monomial vectors of expression
+        element = self.a # VectorAdd.b is always vector, VectorAdd.a not always
+        monomials.append(self.a)
+        monomials.append(self.b)
+        while type(element) is VectorAdd: # while until self.a vector
+            monomials.append(element.a)
+            monomials.append(element.b)
+            element = element.a
+        monomials = [item for item in monomials if type(item) is not VectorAdd] #keep only vectors of decomposition
+        for item in monomials:
+            item.factor = 1 # remove coefficients of vectors
+        new_list, new_list2=[], []
+        for item in monomials:
+            if item**2 not in new_list2: # remove dublicate vectors
+                new_list.append(item)
+                new_list2.append(item**2)
+        return new_list
+        
 class Vector:
     """
     Class to represent a symbolic vector. Product will return the scalar
