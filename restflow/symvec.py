@@ -1,5 +1,5 @@
+import copy
 """Implementation of symbolic vectors with sympy."""
-
 class Context:
     def __init__(self):
         self.dots = {}
@@ -64,9 +64,10 @@ class VectorAdd:
             new_list (array): Symbolic vectors composing an expression
         """
         monomials = [] # array with monomial vectors of expression
-        element = self.a # VectorAdd.b is always vector, VectorAdd.a not always
-        monomials.append(self.a)
-        monomials.append(self.b)
+        copy_vec = copy.deepcopy(self)
+        element = copy_vec.a # VectorAdd.b is always vector, VectorAdd.a not always
+        monomials.append(copy_vec.a)
+        monomials.append(copy_vec.b)
         while type(element) is VectorAdd: # while until self.a vector
             monomials.append(element.a)
             monomials.append(element.b)
