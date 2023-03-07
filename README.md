@@ -8,7 +8,7 @@
 
 `restflow` is a Python package based on [sympy](https://www.sympy.org/) for calculating _symbolically_ the perturbative flow equations of dynamic renormalization. It is a companion package to the manuscript
 
-- xxx
+- Perturbative dynamic renormalization of scalar field theories in statistical physics
 
 When using the package in your academic work, you need to cite this manuscript. For details on the physics and math, consult the manuscript.
 
@@ -16,7 +16,12 @@ At the moment, `restflow` handles 1-loop graphs with complex 2-vertices and simp
 
 ## Requirements
 
-TODO
+- sympy
+- feynman
+- itertools
+- math
+- IPython.display
+- matplotlib.pyplot
 
 ## How to use
 
@@ -69,7 +74,7 @@ v[2].add_outgoing()
 ```
 An outgoing line is added with `add_outgoing()`. Both `link_vertex` and `add_outgoing` except an argument `angle` that specifies the angle with the x axis of the line, which is needed for calling `g.plot_graph()`.
 
-You can now create the graph `g=restflow.Graph(v)`. You need to label the lines, which is achieved by calling `g.label_edges(k,[q])`. The second argument is a list of outgoing wave vectors (in our example composed of `k` and `q`, c.f [here](#symbolic-vectors)), which must agree with the number of outgoing legs. You should now `g.plot_graph()` to check for mistakes.
+You can now create the graph `g=restflow.Graph(v)`. You need to label the lines, which is achieved by defining first an array `labels = [k, p, q-p]`. The first element of this array is the sink wave vector.  The rest of the arguments is the outgoing wave vectors (in our example composed of `p` and `q`, c.f [here](#symbolic-vectors)), which must agree with the number of outgoing legs. You then call the `g.label_edges(labels)` to label the graph. You should now `g.plot_graph()` to check for mistakes.
 
 ### Integrals
 
@@ -80,13 +85,13 @@ expr = g.convert(m)
 ```
 to which you pass your model definition. Alternatively, you can create a list of symbolic expressions for each permutation of the outgoing legs,
 ```
-exprs = g.convert_perm(m,k,[q,p-q])
+exprs = g.convert_perm(m,labels)
 ```
 The final step is to integrate these expression(s)
 ```
-res = restflow.integrate([expr],3,k,q)
+res = restflow.integrate([expr],3,labels)
 ```
-The arguments here are the list of symbolic expressions for the graph (will be summed), the expansion order, the internal wave vector (the integration variable), and the external wave vector.
+The arguments here are the list of symbolic expressions for the graph (will be summed), the expansion order and the label array.
 
 ### Examples
 
