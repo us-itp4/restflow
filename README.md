@@ -8,7 +8,7 @@
 
 `restflow` is a Python package based on [sympy](https://www.sympy.org/) for calculating _symbolically_ the perturbative flow equations of dynamic renormalization. It is a companion package to the manuscript
 
-- Perturbative dynamic renormalization of scalar field theories in statistical physics
+- Papanikolaou, N., Speck, T., Perturbative dynamic renormalization of scalar field theories in statistical physics. arXiv e-prints, arXiv:2303.02222
 
 When using the package in your academic work, you need to cite this manuscript. For details on the physics and math, consult the manuscript.
 
