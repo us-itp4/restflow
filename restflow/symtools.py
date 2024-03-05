@@ -70,3 +70,15 @@ def func_coeff(polynomial, q, p):
     variables = [element for element in variables if element not in var_temp]
     coeffs = all_coeffs(polynomial,variables)
     return coeffs
+
+def nullify_outlegs(exprs, k, q, p, r):
+    """Sets external outgoing legs to zero for array with expr class objects"""
+    dot_pk = k.ctx.dots[frozenset((p.sym,k.sym))]
+    dot_qp = k.ctx.dots[frozenset((q.sym,p.sym))]    
+    dot_qr = k.ctx.dots[frozenset((q.sym,r.sym))]    
+    dot_pr = k.ctx.dots[frozenset((p.sym,r.sym))]    
+    dot_rk = k.ctx.dots[frozenset((r.sym,k.sym))]    
+    for element in exprs:
+        element.num = element.num.subs([(dot_qp,0), (dot_pk,0),(dot_qr,0), (dot_pr,0),(dot_rk,0),(p**2,0),(r**2,0)])
+        element.den = element.den.subs([(dot_qp,0), (dot_pk,0),(dot_qr,0), (dot_pr,0),(dot_rk,0),(p**2,0),(r**2,0)])
+    return exprs
