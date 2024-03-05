@@ -96,4 +96,7 @@ The arguments here are the list of symbolic expressions for the graph (will be s
 ### Examples
 
 * `kpz.ipynb`: Applies `restflow` to the famous KPZ model.
+* `model_b`: Applies `restflow` to Model B.
+* `ckpz.ipynb`: Applies `restflow` to the famous cKPZ model.
 * `neural_network.ipynb`: Applies `restflow` to a neural network model.
+
