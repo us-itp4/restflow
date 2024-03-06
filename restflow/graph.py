@@ -212,7 +212,8 @@ class Graph:
       (2,2): (1,(f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))),
       (2,0): (Qpm[0],(f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))*Qpm[1]),
       (3,3): (1,(f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))*(f(k)+f(k_edge[2]))), 
-      (3,1): (Qppm[0],((f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))*(f(k)+f(k_edge[2])))*Qppm[1])
+      (3,1): (Qppm[0],((f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))*(f(k)+f(k_edge[2])))*Qppm[1]),
+      (4,4): (1,(f(k)+f(k_edge[0]))*(f(k)+f(k_edge[1]))*(f(k)+f(k_edge[2]))*(f(k)+f(k_edge[3]))), 
     }
     return dict_freq[(len(signs),int(abs(sum(signs))))]
 
